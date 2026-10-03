@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kubernetes - DevOps Platform</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top"><nav>
+  <span class="brand">DevOps Platform</span>
+  <a href="index.html">Overview</a>
+  <a href="docker.html">Docker</a>
+  <a class="active" href="kubernetes.html">Kubernetes</a>
+  <a href="observability.html">Observability</a>
+  <a href="logs.html">Logs</a>
+</nav></header>
+<main>
+  <h1>Kubernetes</h1>
+  <p class="lead">A local <code>kind</code> cluster created by Terraform, the app deployed through a Helm chart, and Argo CD keeping the cluster in sync with Git.</p>
+
+  <h2>Cluster</h2>
+  <ul>
+    <li>1 control-plane node and 2 workers (<code>terraform/main.tf</code>, <code>k8s/kind-config.yaml</code>).</li>
+    <li><code>ingress-nginx</code> and <code>argo-cd</code> are installed by Terraform's Helm provider.</li>
+    <li>Host ports <code>8081</code> and <code>8443</code> map to the ingress controller.</li>
+  </ul>
+<pre><code>make tf-init
+make tf-apply
+export KUBECONFIG=$(cd terraform &amp;&amp; terraform output -raw kubeconfig_path)
+kubectl get nodes</code></pre>
+
+  <h2>Helm chart (<code>helm/webapp</code>)</h2>
+  <table>
+    <tr><th>Template</th><th>What it does</th></tr>
+    <tr><td>deployment.yaml</td><td>Non-root, read-only root FS, liveness and readiness probes, resource limits</td></tr>
+    <tr><td>service.yaml</td><td>ClusterIP on port 80 to container port 8080</td></tr>
+    <tr><td>hpa.yaml</td><td>Autoscale 2 to 5 replicas at 70% CPU</td></tr>
+    <tr><td>ingress.yaml</td><td>Optional, enable with <code>ingress.enabled=true</code></td></tr>
+    <tr><td>servicemonitor.yaml</td><td>Optional Prometheus Operator integration</td></tr>
+  </table>
+<pre><code>helm lint helm/webapp
+helm template webapp helm/webapp
+helm upgrade --install webapp helm/webapp -n webapp --create-namespace</code></pre>
+
+  <h2>GitOps with Argo CD</h2>
+  <p>An "app of apps" pattern: one root application points at <code>argocd/apps/</code>, which defines the rest.</p>
+  <table>
+    <tr><th>Application</th><th>Source</th><th>Namespace</th></tr>
+    <tr><td>webapp</td><td>this repo, <code>helm/webapp</code></td><td>webapp</td></tr>
+    <tr><td>kube-prometheus-stack</td><td>prometheus-community Helm repo</td><td>monitoring</td></tr>
+    <tr><td>loki-stack</td><td>grafana Helm repo</td><td>monitoring</td></tr>
+  </table>
+<pre><code># 1. replace REPO_URL in argocd/root-app.yaml and argocd/apps/webapp.yaml
+# 2. bootstrap
+make argocd-bootstrap
+# 3. open the UI
+kubectl -n argocd port-forward svc/argocd-server 8082:443
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d</code></pre>
+
+  <div class="note">All three applications have automated sync with <code>prune</code> and <code>selfHeal</code> enabled, so manual drift in the cluster is reverted to what Git says.</div>
+
+  <h2>Namespace policies (<code>k8s/namespace-policies.yaml</code>)</h2>
+  <ul>
+    <li><span class="tag">ResourceQuota</span> caps CPU, memory and pod count for the <code>webapp</code> namespace.</li>
+    <li><span class="tag">NetworkPolicy</span> denies all ingress by default, then allows TCP 8080 to the app pods.</li>
+  </ul>
+</main>
+<footer>DevOps Platform</footer>
+</body>
+</html>

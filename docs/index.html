@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevOps Platform</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top"><nav>
+  <span class="brand">DevOps Platform</span>
+  <a class="active" href="index.html">Overview</a>
+  <a href="docker.html">Docker</a>
+  <a href="kubernetes.html">Kubernetes</a>
+  <a href="observability.html">Observability</a>
+  <a href="logs.html">Logs</a>
+</nav></header>
+<main>
+  <h1>DevOps Platform</h1>
+  <p class="lead">A complete, runnable DevOps project: containerised app, Kubernetes with Helm and Argo CD, Prometheus/Grafana/Loki observability, Terraform and Ansible automation, and CI/CD on GitHub Actions. Everything runs locally; no cloud account is needed.</p>
+
+  <div class="grid">
+    <a class="card" href="docker.html"><h3>Docker</h3><p>Image build, non-root runtime, Compose stack with load generator.</p></a>
+    <a class="card" href="kubernetes.html"><h3>Kubernetes</h3><p>kind cluster, Helm chart, Argo CD GitOps, network policies.</p></a>
+    <a class="card" href="observability.html"><h3>Observability</h3><p>Metrics, alerts and Grafana dashboards.</p></a>
+    <a class="card" href="logs.html"><h3>Logs</h3><p>Structured JSON logs shipped to Loki, with LogQL examples.</p></a>
+  </div>
+
+  <h2>How a change reaches the cluster</h2>
+  <div class="flow">
+    <span class="step">git push</span><span class="arrow">→</span>
+    <span class="step">GitHub Actions CI<br><small>test, lint, build</small></span><span class="arrow">→</span>
+    <span class="step">CD: push image to GHCR</span><span class="arrow">→</span>
+    <span class="step">bump tag in Helm values</span><span class="arrow">→</span>
+    <span class="step">Argo CD syncs</span><span class="arrow">→</span>
+    <span class="step">Kubernetes rollout</span>
+  </div>
+
+  <h2>Tool map</h2>
+  <table>
+    <tr><th>Concern</th><th>Tool</th><th>Where</th></tr>
+    <tr><td>Containers</td><td>Docker, Compose</td><td><code>app/Dockerfile</code>, <code>docker-compose.yml</code></td></tr>
+    <tr><td>Orchestration</td><td>Kubernetes (kind)</td><td><code>k8s/</code>, <code>terraform/</code></td></tr>
+    <tr><td>Packaging</td><td>Helm</td><td><code>helm/webapp</code></td></tr>
+    <tr><td>GitOps</td><td>Argo CD</td><td><code>argocd/</code></td></tr>
+    <tr><td>Metrics and dashboards</td><td>Prometheus, Grafana</td><td><code>observability/</code></td></tr>
+    <tr><td>Logs</td><td>Loki, Promtail</td><td><code>observability/</code></td></tr>
+    <tr><td>Infrastructure as code</td><td>Terraform</td><td><code>terraform/</code></td></tr>
+    <tr><td>Configuration management</td><td>Ansible</td><td><code>ansible/</code></td></tr>
+    <tr><td>CI/CD</td><td>GitHub Actions</td><td><code>.github/workflows/</code></td></tr>
+    <tr><td>Secrets and keys</td><td><code>.env</code> (git-ignored)</td><td><code>.env.example</code>, <code>scripts/gen-keys.sh</code></td></tr>
+  </table>
+
+  <h2>Quick start</h2>
+<pre><code>cp .env.example .env     # or: make keys  (also generates the SSH key pair)
+make up                  # app + Prometheus + Loki + Grafana
+# App        http://localhost:8080
+# Prometheus http://localhost:9090
+# Grafana    http://localhost:3000   (credentials from .env)</code></pre>
+</main>
+<footer>DevOps Platform &middot; docs are plain HTML, open them straight from disk.</footer>
+</body>
+</html>

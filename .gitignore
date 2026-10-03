@@ -1,0 +1,15 @@
+.env
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+kubeconfig*
+*.retry

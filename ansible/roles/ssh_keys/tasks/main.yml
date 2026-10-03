@@ -1,0 +1,15 @@
+---
+# Installs the public key from .env (SSH_PUBLIC_KEY_B64) into authorized_keys.
+# Run with:  set -a; . ./.env; set +a; ansible-playbook playbook.yml
+- name: Decode public key from environment
+  ansible.builtin.set_fact:
+    ssh_public_key: "{{ lookup('env', 'SSH_PUBLIC_KEY_B64') | b64decode }}"
+  when: lookup('env', 'SSH_PUBLIC_KEY_B64') | length > 0
+  no_log: true
+
+- name: Authorize the platform SSH key
+  ansible.posix.authorized_key:
+    user: "{{ ansible_user }}"
+    key: "{{ ssh_public_key }}"
+    state: present
+  when: ssh_public_key is defined

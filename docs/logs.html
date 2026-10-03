@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logs - DevOps Platform</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top"><nav>
+  <span class="brand">DevOps Platform</span>
+  <a href="index.html">Overview</a>
+  <a href="docker.html">Docker</a>
+  <a href="kubernetes.html">Kubernetes</a>
+  <a href="observability.html">Observability</a>
+  <a class="active" href="logs.html">Logs</a>
+</nav></header>
+<main>
+  <h1>Logs</h1>
+  <p class="lead">The app writes one JSON object per line to stdout. Promtail ships those lines to Loki, and Grafana lets you query them.</p>
+
+  <h2>Sample output</h2>
+  <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+    <div class="log-line info">{"ts": "2026-10-03T13:21:04+0000", "level": "INFO", "msg": "request", "service": "webapp", "version": "0.1.0", "env": "local", "method": "GET", "path": "/", "status": 200, "duration_ms": 1.4}</div>
+    <div class="log-line info">{"ts": "2026-10-03T13:21:04+0000", "level": "INFO", "msg": "request", "service": "webapp", "version": "0.1.0", "env": "local", "method": "GET", "path": "/work", "status": 200, "duration_ms": 212.8}</div>
+    <div class="log-line error">{"ts": "2026-10-03T13:21:05+0000", "level": "ERROR", "msg": "simulated failure", "service": "webapp", "version": "0.1.0", "env": "local", "path": "/work"}</div>
+    <div class="log-line info">{"ts": "2026-10-03T13:21:05+0000", "level": "INFO", "msg": "request", "service": "webapp", "version": "0.1.0", "env": "local", "method": "GET", "path": "/work", "status": 500, "duration_ms": 87.1}</div>
+  </div>
+
+  <h2>Pipeline</h2>
+  <ol>
+    <li>Promtail uses Docker service discovery and only picks up containers labelled <code>logging=promtail</code>.</li>
+    <li>A JSON pipeline stage extracts <code>level</code>, <code>path</code> and <code>status</code>; <code>level</code> becomes a Loki label.</li>
+    <li>In Kubernetes the <code>loki-stack</code> Argo CD app deploys Loki and a Promtail DaemonSet instead.</li>
+  </ol>
+
+  <h2>LogQL cheat sheet</h2>
+<pre><code># all app logs
+{container="webapp"}
+
+# only errors
+{container="webapp", level="ERROR"}
+
+# parse JSON and filter slow requests
+{container="webapp"} | json | duration_ms &gt; 300
+
+# error lines per minute
+sum(rate({container="webapp", level="ERROR"}[1m]))</code></pre>
+
+  <h2>Where to look</h2>
+  <table>
+    <tr><th>Goal</th><th>Command or URL</th></tr>
+    <tr><td>Raw app logs (Compose)</td><td><code>make logs</code></td></tr>
+    <tr><td>Raw app logs (Kubernetes)</td><td><code>kubectl -n webapp logs -l app.kubernetes.io/name=webapp -f</code></td></tr>
+    <tr><td>Query in Grafana</td><td>Explore, pick the <strong>Loki</strong> data source</td></tr>
+    <tr><td>Logs next to metrics</td><td>Webapp Overview dashboard, bottom panel</td></tr>
+  </table>
+</main>
+<footer>DevOps Platform</footer>
+</body>
+</html>

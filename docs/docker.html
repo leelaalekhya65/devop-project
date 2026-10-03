@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Docker - DevOps Platform</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top"><nav>
+  <span class="brand">DevOps Platform</span>
+  <a href="index.html">Overview</a>
+  <a class="active" href="docker.html">Docker</a>
+  <a href="kubernetes.html">Kubernetes</a>
+  <a href="observability.html">Observability</a>
+  <a href="logs.html">Logs</a>
+</nav></header>
+<main>
+  <h1>Docker</h1>
+  <p class="lead">The app is packaged as a small, non-root image and run locally with Docker Compose together with the full observability stack.</p>
+
+  <h2>The image</h2>
+  <ul>
+    <li>Base: <code>python:3.12-slim</code>, dependencies installed with <code>--no-cache-dir</code>.</li>
+    <li>Runs as UID <code>10001</code> (non-root), served by <code>gunicorn</code> with 2 workers.</li>
+    <li>Built-in <code>HEALTHCHECK</code> against <code>/healthz</code>.</li>
+  </ul>
+<pre><code>docker build -t devops-platform/webapp:local app/
+docker run --rm -p 8080:8080 devops-platform/webapp:local</code></pre>
+
+  <h2>Compose services</h2>
+  <table>
+    <tr><th>Service</th><th>Image</th><th>Port</th><th>Purpose</th></tr>
+    <tr><td>webapp</td><td>built from <code>app/</code></td><td>8080</td><td>Demo service with <code>/metrics</code> and JSON logs</td></tr>
+    <tr><td>loadgen</td><td>curlimages/curl</td><td>-</td><td>Hits the app every second so dashboards always have data</td></tr>
+    <tr><td>prometheus</td><td>prom/prometheus</td><td>9090</td><td>Scrapes the app, evaluates alert rules</td></tr>
+    <tr><td>loki</td><td>grafana/loki</td><td>3100</td><td>Log storage</td></tr>
+    <tr><td>promtail</td><td>grafana/promtail</td><td>-</td><td>Discovers containers via the Docker socket and ships logs</td></tr>
+    <tr><td>grafana</td><td>grafana/grafana</td><td>3000</td><td>Dashboards, pre-provisioned data sources</td></tr>
+  </table>
+
+  <h2>Commands</h2>
+<pre><code>make up        # docker compose up -d --build
+make logs      # follow app logs
+make down      # stop and remove volumes</code></pre>
+
+  <div class="note">Credentials such as the Grafana admin password come from <code>.env</code>, which is git-ignored. Copy <code>.env.example</code> to get started.</div>
+
+  <h2>Endpoints exposed by the app</h2>
+  <table>
+    <tr><th>Path</th><th>Description</th></tr>
+    <tr><td><code>/</code></td><td>Hello JSON with version and environment</td></tr>
+    <tr><td><code>/healthz</code></td><td>Liveness probe</td></tr>
+    <tr><td><code>/readyz</code></td><td>Readiness probe</td></tr>
+    <tr><td><code>/work</code></td><td>Random latency, about 10% simulated 500s</td></tr>
+    <tr><td><code>/metrics</code></td><td>Prometheus exposition format</td></tr>
+  </table>
+</main>
+<footer>DevOps Platform</footer>
+</body>
+</html>

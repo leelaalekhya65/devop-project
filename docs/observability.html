@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Observability - DevOps Platform</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top"><nav>
+  <span class="brand">DevOps Platform</span>
+  <a href="index.html">Overview</a>
+  <a href="docker.html">Docker</a>
+  <a href="kubernetes.html">Kubernetes</a>
+  <a class="active" href="observability.html">Observability</a>
+  <a href="logs.html">Logs</a>
+</nav></header>
+<main>
+  <h1>Observability</h1>
+  <p class="lead">Metrics from Prometheus, logs from Loki, and everything visible in one Grafana instance.</p>
+
+  <div class="flow">
+    <span class="step">webapp<br><small>/metrics + JSON logs</small></span><span class="arrow">→</span>
+    <span class="step">Prometheus<br><small>scrape every 15s</small></span><span class="arrow">→</span>
+    <span class="step">Grafana</span>
+    <span class="arrow">&nbsp;&nbsp;</span>
+    <span class="step">Promtail</span><span class="arrow">→</span>
+    <span class="step">Loki</span><span class="arrow">→</span>
+    <span class="step">Grafana</span>
+  </div>
+
+  <h2>Metrics exposed by the app</h2>
+  <table>
+    <tr><th>Metric</th><th>Type</th><th>Labels</th></tr>
+    <tr><td><code>http_requests_total</code></td><td>Counter</td><td>method, path, status</td></tr>
+    <tr><td><code>http_request_duration_seconds</code></td><td>Histogram</td><td>path</td></tr>
+  </table>
+
+  <h2>Useful PromQL</h2>
+<pre><code># request rate per path
+sum(rate(http_requests_total[1m])) by (path)
+
+# error ratio
+sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))
+
+# p95 latency
+histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))</code></pre>
+
+  <h2>Alert rules (<code>observability/prometheus/alerts.yml</code>)</h2>
+  <table>
+    <tr><th>Alert</th><th>Condition</th><th>Severity</th></tr>
+    <tr><td>WebappDown</td><td><code>up{job="webapp"} == 0</code> for 1m</td><td><span class="tag warn">critical</span></td></tr>
+    <tr><td>HighErrorRate</td><td>more than 20% 5xx for 5m</td><td><span class="tag warn">warning</span></td></tr>
+    <tr><td>HighLatencyP95</td><td>p95 above 500ms for 5m</td><td><span class="tag warn">warning</span></td></tr>
+  </table>
+
+  <h2>Grafana</h2>
+  <ul>
+    <li>Data sources (Prometheus and Loki) are provisioned from <code>observability/grafana/provisioning</code>.</li>
+    <li>The <strong>Webapp Overview</strong> dashboard shows request rate, p95 latency, error ratio and live logs.</li>
+    <li>Docker Compose: <code>http://localhost:3000</code>. Kubernetes: installed by the <code>kube-prometheus-stack</code> Argo CD app.</li>
+  </ul>
+<pre><code>kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80</code></pre>
+</main>
+<footer>DevOps Platform</footer>
+</body>
+</html>

@@ -1,0 +1,9 @@
+---
+- name: Provision a DevOps workstation / build host
+  hosts: devops
+  become: true
+  roles:
+    - common
+    - docker
+    - kubernetes_tools
+    - ssh_keys

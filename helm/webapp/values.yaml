@@ -1,0 +1,42 @@
+replicaCount: 2
+
+image:
+  repository: ghcr.io/your-github-username/devops-platform-webapp
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+env:
+  APP_ENV: kubernetes
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+ingress:
+  enabled: false
+  className: nginx
+  host: webapp.local
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 250m
+    memory: 128Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+serviceMonitor:
+  enabled: false
+  interval: 15s
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/metrics"
